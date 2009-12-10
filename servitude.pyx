@@ -28,24 +28,11 @@ cdef extern from "CoreFoundation/CFString.h":
 
 cdef extern from "CoreMIDI/MIDIServices.h":
     ctypedef void* MIDIObjectRef
-    #ctypedef struct MIDINotification:
-        #pass
-    #ctypedef struct MIDIClientRef:
-        #pass
-    #ctypedef struct MIDIDeviceRef:
-        #pass
-    #ctypedef struct MIDIEndpointRef:
-        #pass
-    #ctypedef struct MIDIPortRef:
-        #pass
-    #ctypedef struct MIDIPacketList:
-        #pass
     ctypedef MIDIObjectRef MIDINotification
     ctypedef MIDIObjectRef MIDIClientRef
     ctypedef MIDIObjectRef MIDIDeviceRef
     ctypedef MIDIObjectRef MIDIEndpointRef
     ctypedef MIDIObjectRef MIDIPortRef
-    #ctypedef MIDIObjectRef MIDIPacketList
 
     ctypedef UInt64 MIDITimeStamp
 
