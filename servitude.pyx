@@ -160,7 +160,7 @@ cdef void callback(MIDIPacketList *pktlist, void *refCon, void *connRefCon):
     for i in range(pktlist.numPackets):
         if packet.data[0] == 0xF8:  # midi clock
             if td.started == 1:
-                handle_clock(td)
+                handle_clock(td, packet.timeStamp)
         elif packet.data[0] == 0xFA:  # midi start
             if td.started == 0:
                 td.clocks == 0
@@ -180,7 +180,7 @@ cdef void callback(MIDIPacketList *pktlist, void *refCon, void *connRefCon):
 
         packet = MIDIPacketNext(packet)
 
-cdef void handle_clock(timingdata *td):
+cdef void handle_clock(timingdata *td, MIDITimeStamp timestamp):
     td.clocks += 1
     if td.clocks % td.callbackinterval == 0:
         callbacktopython(td.callback)
