@@ -141,14 +141,22 @@ ctypedef struct timingdata:
     int callbackinterval
     int clocks
     int started
+    MIDITimeStamp lasttimestamp
+    MIDITimeStamp* received
+    int buflen
+    int bufpos
 
 cdef timingdata* timingdata_create():
     cdef timingdata* td = <timingdata*>malloc(sizeof(timingdata))
     td.clocks = 0
     td.started = 0
+    td.buflen = 96
+    td.received = <MIDITimeStamp*>malloc(td.buflen * sizeof(MIDITimeStamp))
+    td.bufpos = -1
     return td
 
 cdef timingdata_free(timingdata *td):
+    free(td.received)
     free(td)
 
 cdef void callback(MIDIPacketList *pktlist, void *refCon, void *connRefCon):
@@ -182,6 +190,9 @@ cdef void callback(MIDIPacketList *pktlist, void *refCon, void *connRefCon):
 
 cdef void handle_clock(timingdata *td, MIDITimeStamp timestamp):
     td.clocks += 1
+    td.bufpos = (td.bufpos + 1) % td.buflen
+    td.received[td.bufpos] = timestamp
+    td.lasttimestamp = timestamp
     if td.clocks % td.callbackinterval == 0:
         callbacktopython(td.callback)
 
