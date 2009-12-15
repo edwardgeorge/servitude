@@ -1,4 +1,5 @@
 from stdlib cimport *
+from python cimport *
 
 cdef extern from "CoreFoundation/CFBase.h":
     ctypedef unsigned char Boolean
@@ -139,12 +140,13 @@ def getdeviceinfo(int devid):
 ctypedef struct timingdata:
     void* callback
     int callbackinterval
-    int clocks
+    unsigned long clocks
     int started
     MIDITimeStamp lasttimestamp
     MIDITimeStamp* received
     int buflen
     int bufpos
+    int age
 
 cdef timingdata* timingdata_create():
     cdef timingdata* td = <timingdata*>malloc(sizeof(timingdata))
@@ -153,6 +155,7 @@ cdef timingdata* timingdata_create():
     td.buflen = 96
     td.received = <MIDITimeStamp*>malloc(td.buflen * sizeof(MIDITimeStamp))
     td.bufpos = -1
+    td.age = -1
     return td
 
 cdef timingdata_free(timingdata *td):
@@ -188,15 +191,30 @@ cdef void callback(MIDIPacketList *pktlist, void *refCon, void *connRefCon):
 
         packet = MIDIPacketNext(packet)
 
+cdef float _pm = 1000000000.0/60.0
+
+cdef float calculate_bpm(timingdata *td):
+    cdef MIDITimeStamp oldest = td.received[((td.bufpos+td.buflen)-td.age)%td.buflen]  # nanoseconds
+    cdef unsigned long nanosperbeat = ((td.lasttimestamp - oldest) / td.age) * 96  # beats
+    return nanosperbeat / _pm
+
 cdef void handle_clock(timingdata *td, MIDITimeStamp timestamp):
+    cdef float bpm
     td.clocks += 1
     td.bufpos = (td.bufpos + 1) % td.buflen
     td.received[td.bufpos] = timestamp
+    td.age = td.age + 1
+    td.age = td.buflen - 1 if td.age >= td.buflen else td.age
     td.lasttimestamp = timestamp
+    if td.age > 0:
+        bpm = calculate_bpm(td)
+
     if td.clocks % td.callbackinterval == 0:
-        callbacktopython(td.callback)
+        callbacktopython(td.callback, td.clocks, bpm)
 
 cdef void handle_stop(timingdata *td):
+    td.bufpos = -1
+    td.age = -1
     td.started = 0
 
 cdef void handle_continue(timingdata *td):
@@ -208,10 +226,8 @@ cdef void handle_songposition(timingdata *td, MIDIPacket *packet):
     midibeats = midibeats | (packet.data[1] & 127)
     td.clocks = midibeats * 6  # 6 clocks in a midi beat
 
-cdef void callbacktopython(void* callback):
-    cdef PyGILState_STATE gil = PyGILState_Ensure()
-    (<object>callback)()
-    PyGILState_Release(gil)
+cdef void callbacktopython(void* callback, unsigned long clockpos, float bpm) with gil:
+    (<object>callback)(clockpos, bpm)
 
 def go(object callbackfunc, int callbackinterval):
     PyEval_InitThreads()
