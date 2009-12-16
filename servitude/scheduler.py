@@ -5,23 +5,25 @@ import time
 from eventlet import api
 
 class Scheduler(object):
-    def __init__(self):
+    def __init__(self, eventhandler):
         self.r, self.w = os.pipe()
         self.events = []
         self.accuracy = 0.01
         self.default_sleep = 60
+        self.eventhandler = eventhandler
 
     def run(self):
         while True:
             timeout = self.sleep_timeout()
-            try:
-                api.trampoline(self.r, read=True, timeout=timeout)
-                os.read(self.r, 1024)
-            except api.TimeoutError, e:
-                pass
+            if timeout > 0:
+                try:
+                    api.trampoline(self.r, read=True, timeout=timeout)
+                    os.read(self.r, 1024)
+                except api.TimeoutError, e:
+                    pass
             while self.events and self.next_event() <= (time.time() + self.accuracy):
                 event = self.events.pop(0)
-                print time.time(), event
+                self.eventhandler(event)
 
     def sleep_timeout(self):
         next = self.next_event()

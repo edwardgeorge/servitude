@@ -3,8 +3,8 @@ import time
 import scheduler
 
 class Scheduler(scheduler.Scheduler):
-    def __init__(self):
-        super(Scheduler, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(Scheduler, self).__init__(*args, **kwargs)
         self.bpm = 120
         self.clocks = 0
         self._lastrecalc=None
