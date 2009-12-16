@@ -23,9 +23,6 @@ class Scheduler(object):
                 event = self.events.pop(0)
                 print time.time(), event
 
-    def sync_callback(self):
-        pass
-
     def sleep_timeout(self):
         next = self.next_event()
         if next:
