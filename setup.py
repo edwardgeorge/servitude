@@ -5,7 +5,7 @@ from Cython.Distutils import build_ext
 setup(
     name='servitude',
     packages=['servitude'],
-    ext_modules=[Extension("servitude/servitudecoremidi",
+    ext_modules=[Extension("servitude.servitudecoremidi",
         ["servitude/servitudecoremidi.pyx"],
         extra_link_args = [
             '-framework', 'CoreFoundation',
